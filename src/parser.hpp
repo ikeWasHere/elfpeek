@@ -13,6 +13,7 @@ public:
 private:
     void parse();
     void parseProgramHeaders();
+    void analyzeBytes();
 
     std::string m_filePath;
     std::ifstream m_file;

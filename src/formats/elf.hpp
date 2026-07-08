@@ -40,7 +40,11 @@ struct __attribute__((packed)) Header64 {
     uint16_t      e_shstrndx;
 };
 
-constexpr uint32_t PT_LOAD = 1; 
+constexpr uint32_t PT_LOAD = 1;
+
+constexpr uint32_t PF_X = 1; // Executable
+constexpr uint32_t PF_W = 2; // Writable
+constexpr uint32_t PF_R = 4; // Readable
 
 struct __attribute__((packed)) ProgramHeader64 {
     uint32_t p_type;   

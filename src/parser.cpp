@@ -54,5 +54,28 @@ void Parser::parse() {
 }
 
 void Parser::parseProgramHeaders(){
-    //
+   
+    for (const auto& ph : m_programHeaders) {
+        bool isWritable = (ph.p_flags & elf::PF_W);
+        bool isExecutbale = (ph.p_flags & elf::PF_X);
+
+        // Write & Execute check
+        if (isWritable && isExecutbale) {
+            std::cout << "[ALERT]: W^X violation in segment: \n" << std::hex << ph.p_flags;
+        }
+
+        // Potential process hollowing | packer | staging bahavior
+        if (ph.p_memsz > ph.p_filesz) {
+            uint64_t sizeDifference = ph.p_memsz - ph.p_filesz;
+
+            bool isDoubleSize = (ph.p_memsz >= (ph.p_filesz * 2));
+            bool isLargePad = sizeDifference;
+
+            if (isDoubleSize || isLargePad) {
+                std::cout << "[ALERT]: Suspicious segment size discrepancy. Potential Packer/Stager \n";
+            }
+        }
+
+        
+    }
 }
