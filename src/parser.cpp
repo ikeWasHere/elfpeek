@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include "parser.hpp"
-
+ 
 Parser::Parser(std::string filePath) : m_filePath(std::move(filePath)) {
     m_file.open(m_filePath, std::ios::binary);
     if (!m_file) {
@@ -20,16 +20,39 @@ void Parser::parse() {
         throw std::runtime_error("Failed to read ELF header from: " + m_filePath);
     }
 
-    // Checking magic numbers for ELF match
+    // Checking file compatability 
     if (m_header.e_ident[elf::EI_MAG0] != 0x7F ||
         m_header.e_ident[elf::EI_MAG1] != 'E' ||
         m_header.e_ident[elf::EI_MAG2] != 'L' ||
         m_header.e_ident[elf::EI_MAG3] != 'F') {
         throw std::runtime_error("Not a valid ELF binary: " + m_filePath);
+    } else if (m_header.e_ident[elf::EI_CLASS] != elf::ELFCLASS64) {
+        throw std::runtime_error("Not 64-bit architecture: " + m_filePath);
+    } else if (m_header.e_type != elf::ET_EXEC) {
+        throw std::runtime_error("Not an executable file: " + m_filePath);
+    } else if (m_header.e_machine != elf::EM_X86_64) {
+        throw std::runtime_error("Only x86 architecture is accepted right now \n");
     }
 
-    std::cout << "Success: Valid 64-bit ELF binary identified!\n";
+    // Analyze program headers
+    m_file.seekg(m_header.e_phoff);
 
-    // std::cout << "This is the entry: 0x" << std::hex << m_header.e_entry << "\n";
-    // std::cout << "0x" << std::hex <<  m_header.e_phoff << "\n";
+    for (uint16_t i = 0; i < m_header.e_phnum; i++) {
+        elf::ProgramHeader64 ph;
+        m_file.read(reinterpret_cast<char*>(&ph), sizeof(ph));
+
+        if (ph.p_type == elf::PT_LOAD) {
+            m_programHeaders.push_back(ph);
+        }
+    }
+
+    if (m_programHeaders.size() < 1) {
+        throw std::runtime_error("File has no loadable segments" + m_filePath);
+    }
+
+    parseProgramHeaders();
+}
+
+void Parser::parseProgramHeaders(){
+    //
 }

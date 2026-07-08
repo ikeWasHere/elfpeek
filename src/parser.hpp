@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 #include <string>
 
 #include "formats/elf.hpp"
@@ -11,8 +12,12 @@ public:
 
 private:
     void parse();
+    void parseProgramHeaders();
 
     std::string m_filePath;
     std::ifstream m_file;
     elf::Header64 m_header{};
+    elf::ProgramHeader64 m_ph{};
+    std::vector<elf::ProgramHeader64> m_programHeaders;
+
 };

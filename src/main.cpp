@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        std::cout << "Usage: ./parser <path_to_binary>\n";
+        std::cout << "Usage: ./elfpeek <path_to_binary>\n";
         return 1;
     }
 
