@@ -55,10 +55,11 @@ void Parser::parse() {
         throw std::runtime_error("File has no loadable segments" + m_filePath);
     }
 
-    parseProgramHeaders();
+    analyzeProgramHeaders();
+    analyzeEntryPoint();
 }
 
-void Parser::parseProgramHeaders(){
+void Parser::analyzeProgramHeaders() {
     for (const auto& ph : m_programHeaders) {
         bool isWritable = (ph.p_flags & elf::PF_W);
         bool isExecutable = (ph.p_flags & elf::PF_X);
@@ -84,14 +85,32 @@ void Parser::parseProgramHeaders(){
     }
 
     if (m_gnuStackPheaders.empty()) {
-            std::cout << "[ALERT]: Missing configuration, No PT_GNU_STACK segment found, potential for stack based buffer overflows.\n" ;
+            std::cout << "[ALERT]: Missing configuration, No PT_GNU_STACK segment found, potential stack based buffer overflows.\n" ;
     } else if (m_gnuStackPheaders.size() > 1) {
         std::cout << "[ALERT]: Potential evasion tactic, multiple PT_GNU_STACK segments.\n";
     }
 
     for (const auto& ph : m_gnuStackPheaders) {
-        if (ph.p_flags == elf::PF_X) {
+        if (ph.p_flags & elf::PF_X) {
             std::cout<< "[ALERT]: Potential buffer overflow, executable call stack\n";
         }
     }
+}
+
+void Parser::analyzeEntryPoint() { 
+    for (const auto& ph: m_programHeaders) {
+        bool entryPointFound =  (m_header.e_entry >= ph.p_vaddr) && 
+            (m_header.e_entry < ph.p_vaddr + ph.p_memsz);
+        
+        if (!entryPointFound) continue;
+        
+        if(ph.p_flags & elf::PF_W) {
+            std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry << " in writable segment! Likely malware.";
+            return;
+        } 
+
+        return;
+    }
+
+    std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry <<  " does not map to any loadable segment, binary will cause segmentation fault.";
 }

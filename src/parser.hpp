@@ -12,7 +12,8 @@ public:
 
 private:
     void parse();
-    void parseProgramHeaders();
+    void analyzeProgramHeaders();
+    void analyzeEntryPoint();
     void analyzeBytes();
 
     std::string m_filePath;
@@ -20,5 +21,4 @@ private:
     elf::Header64 m_header{};
     std::vector<elf::ProgramHeader64> m_programHeaders;
     std::vector<elf::ProgramHeader64> m_gnuStackPheaders;
-
 };
