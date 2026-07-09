@@ -14,6 +14,7 @@ constexpr int EI_CLASS = 4;
 constexpr int EI_NIDENT = 16;
 
 constexpr uint16_t ET_EXEC = 2;
+constexpr uint16_t ET_DYN = 3;
 
 constexpr uint8_t ELFCLASS32 = 1;
 constexpr uint8_t ELFCLASS64 = 2;
@@ -42,6 +43,8 @@ struct __attribute__((packed)) Header64 {
 
 constexpr uint32_t PT_LOAD = 1;
 
+constexpr uint32_t PT_GNU_STACK = 0x6474e551; // Stack execution permissions
+
 constexpr uint32_t PF_X = 1; // Executable
 constexpr uint32_t PF_W = 2; // Writable
 constexpr uint32_t PF_R = 4; // Readable
@@ -56,6 +59,8 @@ struct __attribute__((packed)) ProgramHeader64 {
     uint64_t p_memsz;  
     uint64_t p_align;  
 };
+
+
 }
 
 

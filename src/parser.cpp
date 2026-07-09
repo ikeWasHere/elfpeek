@@ -28,10 +28,10 @@ void Parser::parse() {
         throw std::runtime_error("Not a valid ELF binary: " + m_filePath);
     } else if (m_header.e_ident[elf::EI_CLASS] != elf::ELFCLASS64) {
         throw std::runtime_error("Not 64-bit architecture: " + m_filePath);
-    } else if (m_header.e_type != elf::ET_EXEC) {
-        throw std::runtime_error("Not an executable file: " + m_filePath);
+    } else if (m_header.e_type != elf::ET_EXEC && m_header.e_type != elf::ET_DYN) {
+        throw std::runtime_error("Not a supported executable or shared library: " + m_filePath);
     } else if (m_header.e_machine != elf::EM_X86_64) {
-        throw std::runtime_error("Only x86 architecture is accepted right now \n");
+        throw std::runtime_error("Only the x86 architecture is supported for now \n");
     }
 
     // Analyze program headers
@@ -43,6 +43,11 @@ void Parser::parse() {
 
         if (ph.p_type == elf::PT_LOAD) {
             m_programHeaders.push_back(ph);
+            continue;
+        }
+        
+        if (ph.p_type == elf::PT_GNU_STACK) {
+            m_gnuStackPheaders.push_back(ph);
         }
     }
 
@@ -54,28 +59,39 @@ void Parser::parse() {
 }
 
 void Parser::parseProgramHeaders(){
-   
     for (const auto& ph : m_programHeaders) {
         bool isWritable = (ph.p_flags & elf::PF_W);
-        bool isExecutbale = (ph.p_flags & elf::PF_X);
+        bool isExecutable = (ph.p_flags & elf::PF_X);
 
         // Write & Execute check
-        if (isWritable && isExecutbale) {
-            std::cout << "[ALERT]: W^X violation in segment: \n" << std::hex << ph.p_flags;
+        if (isWritable && isExecutable) {
+            std::cout << "[ALERT]: Write & Execute violation in segment: \n" << std::hex << ph.p_flags;
         }
 
         // Potential process hollowing | packer | staging bahavior
         if (ph.p_memsz > ph.p_filesz) {
             uint64_t sizeDifference = ph.p_memsz - ph.p_filesz;
-
-            bool isDoubleSize = (ph.p_memsz >= (ph.p_filesz * 2));
-            bool isLargePad = sizeDifference;
+            bool isLargePad = sizeDifference > 102400; // 100KB
+            bool isDoubleSize = ph.p_memsz >= ph.p_filesz * 2;
 
             if (isDoubleSize || isLargePad) {
-                std::cout << "[ALERT]: Suspicious segment size discrepancy. Potential Packer/Stager \n";
+                std::cout << "[ALERT]: Suspicious segment size discrepancy. Potential Packer/Stager \n" 
+                    "Disk Size: " << std::dec << ph.p_filesz << " bytes\n"
+                    "Ram Size: " << ph.p_memsz << " bytes\n"
+                    "Size Difference: " << sizeDifference << " bytes\n";
             }
         }
+    }
 
-        
+    if (m_gnuStackPheaders.empty()) {
+            std::cout << "[ALERT]: Missing configuration, No PT_GNU_STACK segment found, potential for stack based buffer overflows.\n" ;
+    } else if (m_gnuStackPheaders.size() > 1) {
+        std::cout << "[ALERT]: Potential evasion tactic, multiple PT_GNU_STACK segments.\n";
+    }
+
+    for (const auto& ph : m_gnuStackPheaders) {
+        if (ph.p_flags == elf::PF_X) {
+            std::cout<< "[ALERT]: Potential buffer overflow, executable call stack\n";
+        }
     }
 }

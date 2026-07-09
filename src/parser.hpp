@@ -18,7 +18,7 @@ private:
     std::string m_filePath;
     std::ifstream m_file;
     elf::Header64 m_header{};
-    elf::ProgramHeader64 m_ph{};
     std::vector<elf::ProgramHeader64> m_programHeaders;
+    std::vector<elf::ProgramHeader64> m_gnuStackPheaders;
 
 };
