@@ -61,6 +61,24 @@ struct __attribute__((packed)) ProgramHeader64 {
 };
 
 
+constexpr uint32_t SHT_NOBITS = 8; // Type for uninitialized data sections (.bss)
+
+constexpr uint64_t SHF_EXECINSTR = 0x4;  // Section contains executable code
+
+struct __attribute__((packed)) SectionHeader64 {
+    uint32_t   sh_name;
+    uint32_t   sh_type;
+    uint64_t   sh_flags;
+    uint64_t   sh_addr;
+    uint64_t   sh_offset;
+    uint64_t   sh_size;
+    uint32_t   sh_link;
+    uint32_t   sh_info;
+    uint64_t   sh_addralign;
+    uint64_t   sh_entsize;
+};
+
+
 }
 
 

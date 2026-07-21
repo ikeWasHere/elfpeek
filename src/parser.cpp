@@ -34,7 +34,7 @@ void Parser::parse() {
         throw std::runtime_error("Only the x86 architecture is supported for now \n");
     }
 
-    // Analyze program headers
+    // Store program headers
     m_file.seekg(m_header.e_phoff);
 
     for (uint16_t i = 0; i < m_header.e_phnum; i++) {
@@ -55,8 +55,19 @@ void Parser::parse() {
         throw std::runtime_error("File has no loadable segments" + m_filePath);
     }
 
+    // Store section headers
+    m_file.seekg(m_header.e_shoff);
+
+    for (uint16_t i = 0; i < m_header.e_shnum; i++) {
+        elf::SectionHeader64 sh;
+        m_file.read(reinterpret_cast<char*>(&sh), sizeof(sh));
+        m_sectionHeaders.push_back(sh);
+    }
+
+
     analyzeProgramHeaders();
     analyzeEntryPoint();
+    analyzeSectionHeaders();
 }
 
 void Parser::analyzeProgramHeaders() {
@@ -105,12 +116,20 @@ void Parser::analyzeEntryPoint() {
         if (!entryPointFound) continue;
         
         if(ph.p_flags & elf::PF_W) {
-            std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry << " in writable segment! Likely malware.";
+            std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry << " in writable segment! Likely malware.\n";
             return;
         } 
 
         return;
     }
 
-    std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry <<  " does not map to any loadable segment, binary will cause segmentation fault.";
+    std::cout << "[ALERT]: Entry point 0x: " << std::hex << m_header.e_entry <<  " does not map to any loadable segment, binary will cause segmentation fault.\n";
+}
+
+void Parser::analyzeSectionHeaders() {
+    // Checking for missing section headers
+    if (m_sectionHeaders.empty() || m_header.e_shoff == 0) {
+        std::cout << "[ALERT]: Potential evasion tactic, Section Header Table is missing or stripped\n";
+        return;
+    }
 }
